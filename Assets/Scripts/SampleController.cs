@@ -89,7 +89,7 @@ public class SampleController : MonoBehaviour
         });
     }
 
-    public void RequestAndUpdateStatus()
+    void RequestAndUpdateStatus()
     {
         if (brightSdkHelper != null)
         {
