@@ -1238,7 +1238,7 @@ GameObject:
   - component: {fileID: 978605080}
   - component: {fileID: 978605082}
   m_Layer: 0
-  m_Name: BrightSdkController
+  m_Name: SampleController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
