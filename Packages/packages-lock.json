@@ -1,13 +1,5 @@
 {
   "dependencies": {
-    "com.brightdata.brightsdkunityupdater": {
-      "version": "file:/Users/admin/Projects/BrightSDK/bright-sdk-unity",
-      "depth": 0,
-      "source": "local",
-      "dependencies": {
-        "com.unity.sharp-zip-lib": "1.3.9"
-      }
-    },
     "com.unity.2d.animation": {
       "version": "7.0.9",
       "depth": 1,

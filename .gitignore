@@ -1704,3 +1704,5 @@ Assets/Plugins/Android/bright_sdk*.aar
 Assets/Plugins/Android/bright_sdk*.aar.meta
 release*
 *.zip
+Assets/Scripts/BrightSdk
+Assets/Editor/BrightSdk

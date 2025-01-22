@@ -7,7 +7,6 @@ using TMPro;
 public class BrightSdkController : MonoBehaviour
 {
 
-
     public GameObject errorScreen;
     public GameObject homeScreen;
     public GameObject settingsScreen;
@@ -31,6 +30,10 @@ public class BrightSdkController : MonoBehaviour
 
         // Register the global exception handler
         AppDomain.CurrentDomain.UnhandledException += HandleUnhandledException;
+        if (Application.platform == RuntimePlatform.Android)
+        {
+            brightSdkHelper = GetComponent<BrightSdkHelper>();
+        }
     }
 
     // Start is called before the first frame update
@@ -40,10 +43,6 @@ public class BrightSdkController : MonoBehaviour
         toggleScreen(homeScreen);
         Debug.Log($"Setting platform text: {Application.platform.ToString()}");
         platformText.text = $"Platform: {Application.platform.ToString()}";
-        if (Application.platform == RuntimePlatform.Android)
-        {
-            brightSdkHelper = new BrightSdkHelper(this);
-        }
         RequestAndUpdateStatus();
         statusToggle.onValueChanged.AddListener(OnSettingsToggleChanged);
     }
