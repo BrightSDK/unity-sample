@@ -1702,5 +1702,5 @@ sysinfo.txt
 build*
 Assets/Plugins/Android/bright_sdk*.aar
 Assets/Plugins/Android/bright_sdk*.aar.meta
-release_*
+release*
 *.zip
