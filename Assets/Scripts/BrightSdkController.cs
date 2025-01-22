@@ -4,10 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public class AppController : MonoBehaviour
+public class BrightSdkController : MonoBehaviour
 {
-    AndroidJavaObject brightApi;
-    AndroidJavaObject currentActivity;
+
 
     public GameObject errorScreen;
     public GameObject homeScreen;
@@ -22,7 +21,7 @@ public class AppController : MonoBehaviour
     private TextMeshProUGUI platformText;
     private TextMeshProUGUI statusText;
 
-    public ChoiceListener choiceListener;
+    private BrightSdkHelper brightSdkHelper;
 
     void Awake()
     {
@@ -39,9 +38,12 @@ public class AppController : MonoBehaviour
     {
         Screen.orientation = ScreenOrientation.LandscapeLeft;
         toggleScreen(homeScreen);
-        initBrightSdk();
         Debug.Log($"Setting platform text: {Application.platform.ToString()}");
         platformText.text = $"Platform: {Application.platform.ToString()}";
+        if (Application.platform == RuntimePlatform.Android)
+        {
+            brightSdkHelper = new BrightSdkHelper(this);
+        }
         RequestAndUpdateStatus();
         statusToggle.onValueChanged.AddListener(OnSettingsToggleChanged);
     }
@@ -68,34 +70,12 @@ public class AppController : MonoBehaviour
         });
     }
 
-    private void initBrightSdk()
-    {
-        if (Application.platform != RuntimePlatform.Android)
-        {
-            return;
-        }
-        AndroidJavaClass unityPlayerClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
-        currentActivity = unityPlayerClass.GetStatic<AndroidJavaObject>("currentActivity");
-        brightApi = new AndroidJavaObject("com.android.eapx.BrightApi");
-
-        AndroidJavaObject settings = new AndroidJavaObject("com.android.eapx.Settings", currentActivity);
-        settings.Call("setBenefit", "To unlock premium features");
-        settings.Call("setAgreeBtn", "Yes, sure!");
-        settings.Call("setDisagreeBtn", "No, thanks!");
-        // settings.Call("setSkipConsent", true);
-        choiceListener = new ChoiceListener(this);
-        settings.Call("setOnStatusChange", choiceListener);
-        brightApi.CallStatic("init", currentActivity, settings);
-
-    }
-
     public void showBrightSdkConsent()
     {
-        if (Application.platform != RuntimePlatform.Android)
+        if (brightSdkHelper != null)
         {
-            return;
+            brightSdkHelper.ShowConsent();
         }
-        brightApi.CallStatic("showConsent", currentActivity);
     }
 
     private void HandleUnhandledException(object sender, UnhandledExceptionEventArgs e)
@@ -112,29 +92,28 @@ public class AppController : MonoBehaviour
 
     public void RequestAndUpdateStatus()
     {
-        if (Application.platform != RuntimePlatform.Android)
+        if (brightSdkHelper != null)
         {
-            return;
+            bool isEnabled = brightSdkHelper.IsEnabled();
+            UpdateStatus(isEnabled);
         }
-        int choice = brightApi.CallStatic<int>("getChoice", currentActivity);
-        UpdateStatus(choice);
     }
 
-    public void UpdateStatus(int choice)
+    public void UpdateStatus(bool isEnabled)
     {
         UnityMainThreadDispatcher.Enqueue(() =>
         {
-            Debug.Log($"Bright SDK consent choice: {choice}");
-            string status = choice == 1 ? "Status: Premium" : "Status: Free";
+            Debug.Log($"Bright SDK enabled: {isEnabled}");
+            string status = isEnabled ? "Status: Premium" : "Status: Free";
             Debug.Log($"Setting statusText: {status}");
             statusText.text = status;
             Debug.Log($"Updated statusText: {statusText.text}");
             Debug.Log($"Updating statusToggle: {statusToggle.isOn}");
             isProgrammaticChange = true;
-            statusToggle.isOn = choice == 1;
+            statusToggle.isOn = isEnabled;
             isProgrammaticChange = false;
             Debug.Log($"Updating premiumButton: {premiumButton.activeSelf}");
-            premiumButton.SetActive(choice != 1);
+            premiumButton.SetActive(!isEnabled);
         });
     }
 
@@ -146,26 +125,70 @@ public class AppController : MonoBehaviour
             return;
         }
         Debug.Log($"Settings Toggle changed: {isOn}");
-        if (Application.platform != RuntimePlatform.Android)
+        if (brightSdkHelper == null)
         {
             return;
         }
         if (isOn)
         {
-            // Call some function when the toggle is checked
-            showBrightSdkConsent();
+            brightSdkHelper.ShowConsent();
         }
         else
         {
-            brightApi.CallStatic("optOut", currentActivity);
+            brightSdkHelper.OptOut();
         }
     }
 
-    public class ChoiceListener : AndroidJavaProxy
+    public class BrightSdkHelper
     {
-        private AppController parent;
+        private ChoiceListener choiceListener;
 
-        public ChoiceListener(AppController parent) : base("com.android.eapx.Settings$OnStatusChange")
+        private AndroidJavaObject brightApi;
+        private AndroidJavaObject currentActivity;
+
+        public string benefit = "To unlock premium features";
+        public string agreeBtn = "Yes, sure!";
+        public string disagreeBtn = "No, thanks!";
+        public bool skipConsent = false;
+
+        public BrightSdkHelper(BrightSdkController parent)
+        {
+            choiceListener = new ChoiceListener(parent);
+            AndroidJavaClass unityPlayerClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+            currentActivity = unityPlayerClass.GetStatic<AndroidJavaObject>("currentActivity");
+            brightApi = new AndroidJavaObject("com.android.eapx.BrightApi");
+            AndroidJavaObject settings = new AndroidJavaObject("com.android.eapx.Settings", currentActivity);
+            settings.Call("setBenefit", benefit);
+            settings.Call("setAgreeBtn", agreeBtn);
+            settings.Call("setDisagreeBtn", disagreeBtn);
+            settings.Call("setSkipConsent", skipConsent);
+            settings.Call("setOnStatusChange", choiceListener);
+            brightApi.CallStatic("init", currentActivity, settings);
+        }
+
+        public void ShowConsent()
+        {
+            brightApi.CallStatic("showConsent", currentActivity);
+        }
+
+        public void OptOut()
+        {
+            brightApi.CallStatic("optOut", currentActivity);
+        }
+
+        public bool IsEnabled()
+        {
+            int choice = brightApi.CallStatic<int>("getChoice", currentActivity);
+            return choiceListener.isEnabled(choice);
+        }
+
+    }
+
+    private class ChoiceListener : AndroidJavaProxy
+    {
+        private BrightSdkController parent;
+
+        public ChoiceListener(BrightSdkController parent) : base("com.android.eapx.Settings$OnStatusChange")
         {
             this.parent = parent;
         }
@@ -173,7 +196,12 @@ public class AppController : MonoBehaviour
         public void onChange(int choice)
         {
             Debug.Log($"Bright SDK consent choice changed: {choice}");
-            parent.UpdateStatus(choice);
+            parent.UpdateStatus(isEnabled(choice));
+        }
+
+        public bool isEnabled(int choice)
+        {
+            return choice == 1;
         }
     }
 }
