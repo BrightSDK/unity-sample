@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public class BrightSdkController : MonoBehaviour
+public class SampleController : MonoBehaviour
 {
 
     public GameObject errorScreen;
@@ -69,7 +69,7 @@ public class BrightSdkController : MonoBehaviour
         });
     }
 
-    public void showBrightSdkConsent()
+    public void ShowBrightSdkConsent()
     {
         if (brightSdkHelper != null)
         {
