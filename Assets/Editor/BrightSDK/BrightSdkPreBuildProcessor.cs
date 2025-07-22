@@ -13,41 +13,49 @@ using System.Text;
 
 public class BrightSdkPreBuildProcessor : IPreprocessBuildWithReport
 {
-    private string sdkVersion = "latest";
-    private readonly string sdkDir = "Assets/Plugins/Android";
     private readonly string cacheDir = "Library/BrightSdkCache";
     private readonly string sdkUrl = "https://cdn.bright-sdk.com/static/";
     private readonly string sdkVersionsUrl = "https://bright-sdk.com/sdk_api/sdk/versions";
 
-    private readonly Dictionary<string, string> sdkVersions = new Dictionary<string, string>();
+    private readonly Dictionary<BuildTarget, string> sdkVersions = new Dictionary<BuildTarget, string>();
+    private readonly Dictionary<BuildTarget, BrightSDKDowloader> downloaders = new Dictionary<BuildTarget, BrightSDKDowloader>();
 
     public int callbackOrder => 0;
+
+    public BrightSdkPreBuildProcessor()
+    {
+        downloaders[BuildTarget.Android] = new AndroidBrightSDKDowloader(cacheDir, "Assets/Plugins", sdkUrl);
+    }
 
     public void OnPreprocessBuild(BuildReport report)
     {
         Debug.Log("BrightSdkPreBuildProcessor: OnPreprocessBuild called");
 
-        if (report.summary.platform == BuildTarget.Android)
+        BuildTarget platform = report.summary.platform;
+        if (downloaders.ContainsKey(platform))
         {
-            Debug.Log("BrightSdkPreBuildProcessor: Platform is Android, updating Bright SDK");
-            UpdateBrightSdk();
+            Debug.Log("BrightSdkPreBuildProcessor: Platform is " + platform + ", updating Bright SDK");
+            UpdateBrightSdk(platform);
         }
         else
         {
-            Debug.Log("BrightSdkPreBuildProcessor: Platform is not Android, skipping Bright SDK update");
+            Debug.Log("BrightSdkPreBuildProcessor: Platform " + platform + " is not supported, skipping Bright SDK update");
         }
     }
 
-    private void UpdateBrightSdk()
+    private void UpdateBrightSdk(BuildTarget platform)
     {
         Debug.Log("BrightSdkPreBuildProcessor: Starting Bright SDK update");
         ParseBrightSdkArgs();
         FetchBrightSdkVersions();
         PopulateBrightSdkVersions();
-        AdjustBrightSdkVersion();
-        DownloadBrightSdk();
-        RemoveObsoleteAarFiles();
-        ExtractBrightSdk();
+
+        if (downloaders.ContainsKey(platform) && sdkVersions.ContainsKey(platform))
+        {
+            string version = sdkVersions[platform];
+            downloaders[platform].Download(version);
+        }
+
         Debug.Log("BrightSdkPreBuildProcessor: Bright SDK updated successfully");
     }
 
@@ -88,7 +96,9 @@ public class BrightSdkPreBuildProcessor : IPreprocessBuildWithReport
         Debug.Log("SDK versions json content: " + jsonContent);
 
         SdkVersions sdkVersionsData = JsonUtility.FromJson<SdkVersions>(jsonContent);
-        sdkVersions["android"] = sdkVersionsData.android;
+        // TODO: is it necessary?
+        sdkVersions[BuildTarget.Android] = sdkVersionsData.android;
+        sdkVersions[BuildTarget.iOS] = sdkVersionsData.ios;
 
         Debug.Log("SDK versions: " + string.Join(", ", sdkVersions.Select(kv => kv.Key + "=" + kv.Value)));
     }
@@ -98,21 +108,54 @@ public class BrightSdkPreBuildProcessor : IPreprocessBuildWithReport
         // Populate the SDK versions
         Debug.Log("BrightSdkPreBuildProcessor: Populating Bright SDK versions");
     }
+}
 
-    private void AdjustBrightSdkVersion()
+[Serializable]
+public class SdkVersions
+{
+    public string android;
+    public string ios;
+    // Add other fields if necessary
+}
+
+interface BrightSDKDowloader
+{
+    public void Download(string publicVersion);
+}
+
+class AndroidBrightSDKDowloader: BrightSDKDowloader
+{
+    // null for latest
+    private string sdkVersion = "1.543.127";
+    private string cacheDir;
+    private string sdkDir;
+    private string sdkUrl;
+
+    public AndroidBrightSDKDowloader(string _cacheDir, string pluginsDir, string _sdkUrl)
     {
-        // Adjust the SDK version
-        Debug.Log("BrightSdkPreBuildProcessor: Adjusting Bright SDK version");
-        if (sdkVersion == "latest" && sdkVersions.ContainsKey("android"))
+        cacheDir = _cacheDir;
+        sdkDir = Path.Combine(pluginsDir, "Android");
+        sdkUrl = _sdkUrl;
+
+        if (!Directory.Exists(sdkDir))
         {
-            sdkVersion = sdkVersions["android"];
+            Directory.CreateDirectory(sdkDir);
         }
+    }
+
+    public void Download(string publicVersion)
+    {
+        if (sdkVersion == null)
+            sdkVersion = publicVersion;
+        DownloadBrightSdk();
+        RemoveObsoleteAarFiles();
+        ExtractBrightSdk();
     }
 
     private void DownloadBrightSdk()
     {
         // Download the SDK
-        Debug.Log("BrightSdkPreBuildProcessor: Downloading Bright SDK");
+        Debug.Log("AndroidBrightSDKDowloader: Downloading Bright SDK " + sdkVersion);
         string targzName = "bright_sdk_android-" + sdkVersion + ".tar.gz";
         string targzFile = Path.Combine(cacheDir, targzName);
 
@@ -132,11 +175,11 @@ public class BrightSdkPreBuildProcessor : IPreprocessBuildWithReport
     private void RemoveObsoleteAarFiles()
     {
         // Remove obsolete bright_sdk*.aar files
-        Debug.Log("BrightSdkPreBuildProcessor: Removing obsolete bright_sdk*.aar files");
+        Debug.Log("AndroidBrightSDKDowloader: Removing obsolete bright_sdk*.aar files");
         string[] obsoleteAarFiles = Directory.GetFiles(sdkDir, "bright_sdk*.aar", SearchOption.TopDirectoryOnly);
         foreach (string file in obsoleteAarFiles)
         {
-            Debug.Log($"Deleting obsolete AAR file: {file}");
+            Debug.Log($"AndroidBrightSDKDowloader: Deleting obsolete AAR file {file}");
             File.Delete(file);
         }
     }
@@ -155,7 +198,7 @@ public class BrightSdkPreBuildProcessor : IPreprocessBuildWithReport
         }
 
         // Extract the SDK
-        Debug.Log("BrightSdkPreBuildProcessor: Extracting Bright SDK");
+        Debug.Log("AndroidBrightSDKDowloader: Extracting Bright SDK");
         string targzName = "bright_sdk_android-" + sdkVersion + ".tar.gz";
         string targzFile = Path.Combine(cacheDir, targzName);
         string extractDir = Path.Combine(cacheDir, "extracted");
@@ -200,7 +243,7 @@ public class BrightSdkPreBuildProcessor : IPreprocessBuildWithReport
         }
 
         // Log the contents of the extracted directory
-        LogDirectoryContents(extractDir);
+        // LogDirectoryContents(extractDir);
 
         // Find the .aar file recursively
         string aarFile = Directory.GetFiles(extractDir, "*.aar", SearchOption.AllDirectories).FirstOrDefault();
@@ -214,31 +257,24 @@ public class BrightSdkPreBuildProcessor : IPreprocessBuildWithReport
         if (aarFile != null && File.Exists(aarFile))
         {
             File.Copy(aarFile, destAarFile);
-            Debug.Log($"AAR file found and copied from {aarFile} to {destAarFile}");
+            Debug.Log($"AndroidBrightSDKDowloader: AAR file found and copied from {aarFile} to {destAarFile}");
         }
         else
         {
-            Debug.LogError($"AAR file not found in {extractDir}");
+            Debug.LogError($"AndroidBrightSDKDowloader: AAR file not found in {extractDir}");
         }
     }
 
     private void LogDirectoryContents(string path)
     {
-        Debug.Log($"Contents of {path}:");
+        Debug.Log($"AndroidBrightSDKDowloader: Contents of {path}:");
         foreach (string dir in Directory.GetDirectories(path, "*", SearchOption.AllDirectories))
         {
-            Debug.Log($"Directory: {dir}");
+            Debug.Log($"AndroidBrightSDKDowloader: Directory {dir}");
         }
         foreach (string file in Directory.GetFiles(path, "*", SearchOption.AllDirectories))
         {
-            Debug.Log($"File: {file}");
+            Debug.Log($"AndroidBrightSDKDowloader: File {file}");
         }
     }
-}
-
-[Serializable]
-public class SdkVersions
-{
-    public string android;
-    // Add other fields if necessary
 }
