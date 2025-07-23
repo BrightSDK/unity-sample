@@ -10,6 +10,7 @@ using System.Linq;
 using Unity.SharpZipLib.Tar;
 using Unity.SharpZipLib.GZip;
 using System.Text;
+using System.IO.Compression;
 
 public class BrightSdkPreBuildProcessor : IPreprocessBuildWithReport
 {
@@ -25,6 +26,7 @@ public class BrightSdkPreBuildProcessor : IPreprocessBuildWithReport
     public BrightSdkPreBuildProcessor()
     {
         downloaders[BuildTarget.Android] = new AndroidBrightSDKDowloader(cacheDir, "Assets/Plugins", sdkUrl);
+        downloaders[BuildTarget.iOS] = new AppleBrightSDKDowloader(cacheDir, "Assets/Plugins", sdkUrl);
     }
 
     public void OnPreprocessBuild(BuildReport report)
@@ -187,11 +189,6 @@ class AndroidBrightSDKDowloader: BrightSDKDowloader
     private void ExtractBrightSdk()
     {
         // Ensure necessary directories exist
-        if (!Directory.Exists(sdkDir))
-        {
-            Directory.CreateDirectory(sdkDir);
-        }
-
         if (!Directory.Exists(cacheDir))
         {
             Directory.CreateDirectory(cacheDir);
@@ -257,6 +254,7 @@ class AndroidBrightSDKDowloader: BrightSDKDowloader
         if (aarFile != null && File.Exists(aarFile))
         {
             File.Copy(aarFile, destAarFile);
+            AssetDatabase.Refresh();
             Debug.Log($"AndroidBrightSDKDowloader: AAR file found and copied from {aarFile} to {destAarFile}");
         }
         else
@@ -275,6 +273,138 @@ class AndroidBrightSDKDowloader: BrightSDKDowloader
         foreach (string file in Directory.GetFiles(path, "*", SearchOption.AllDirectories))
         {
             Debug.Log($"AndroidBrightSDKDowloader: File {file}");
+        }
+    }
+}
+
+class AppleBrightSDKDowloader : BrightSDKDowloader
+{
+    // null for latest
+    private string sdkVersion = null;
+    private string cacheDir;
+    private string sdkDir;
+    private string sdkUrl;
+    private string sdkFileName
+    {
+        get => "bright_sdk_ios-" + sdkVersion + ".zip";
+    }
+
+    public AppleBrightSDKDowloader(string _cacheDir, string pluginsDir, string _sdkUrl)
+    {
+        cacheDir = _cacheDir;
+        sdkDir = Path.Combine(pluginsDir, "Apple");
+        sdkUrl = _sdkUrl;
+
+        if (!Directory.Exists(sdkDir))
+        {
+            Directory.CreateDirectory(sdkDir);
+        }
+    }
+
+    public void Download(string publicVersion)
+    {
+        if (sdkVersion == null)
+            sdkVersion = publicVersion;
+        DownloadBrightSdk();
+        // RemoveObsoleteAarFiles();
+        ExtractBrightSdk();
+    }
+
+    private void DownloadBrightSdk()
+    {
+        // Download the SDK
+        Debug.Log("AppleBrightSDKDowloader: Downloading Bright SDK " + sdkVersion);
+        string zipFile = Path.Combine(cacheDir, sdkFileName);
+
+        if (!Directory.Exists(cacheDir))
+        {
+            Directory.CreateDirectory(cacheDir);
+        }
+        else if (!File.Exists(zipFile))
+        {
+            using (WebClient client = new WebClient())
+            {
+                client.DownloadFile(sdkUrl + sdkFileName, zipFile);
+            }
+        }
+    }
+
+    // private void RemoveObsoleteAarFiles()
+    // {
+    //     Debug.Log("AppleBrightSDKDowloader: Removing obsolete files");
+    //     string[] obsoleteAarFiles = Directory.GetFiles(sdkDir, "bright_sdk*.aar", SearchOption.TopDirectoryOnly);
+    //     foreach (string file in obsoleteAarFiles)
+    //     {
+    //         Debug.Log($"AppleBrightSDKDowloader: Deleting obsolete AAR file {file}");
+    //         File.Delete(file);
+    //     }
+    // }
+
+    private void ExtractBrightSdk()
+    {
+        // Ensure necessary directories exist
+        if (!Directory.Exists(cacheDir))
+            Directory.CreateDirectory(cacheDir);
+
+        // Extract the SDK
+        Debug.Log("AppleBrightSDKDowloader: Extracting Bright SDK");
+        string zipFile = Path.Combine(cacheDir, sdkFileName);
+        string extractDir = Path.Combine(cacheDir, "extracted/apple");
+
+        if (Directory.Exists(extractDir))
+            Directory.Delete(extractDir, true);
+        Directory.CreateDirectory(extractDir);
+
+        ZipFile.ExtractToDirectory(zipFile, extractDir);
+
+        string destDir = Path.Combine(sdkDir, "BrightDataSDK");
+        if (Directory.Exists(destDir))
+        {
+            Directory.Delete(destDir, true);
+        }
+        string srcDir = Path.Combine(extractDir, "unity_editor_sample_app/Assets/BrightDataSDK");
+        CopyDirectory(srcDir, destDir, true);
+        setSettingsOfFramework(destDir);
+        AssetDatabase.Refresh();
+        Debug.Log("AppleBrightSDKDowloader: Bright SDK updated");
+    }
+
+    private void setSettingsOfFramework(string frameworkRoot)
+    {
+        Debug.Log("AppleBrightSDKDowloader: Set settings for framework");
+        string frameworkPath = Path.Combine(frameworkRoot, "brdsdk.xcframework");
+        PluginImporter plugin = AssetImporter.GetAtPath(frameworkPath) as PluginImporter;
+        if (plugin == null)
+        {
+            Debug.Log("AppleBrightSDKDowloader: Framework not found " + frameworkPath);
+            return;
+        }
+        plugin.SetCompatibleWithAnyPlatform(false);
+        plugin.SetCompatibleWithEditor(false);
+        plugin.SetCompatibleWithPlatform(BuildTarget.iOS, true);
+        plugin.SetCompatibleWithPlatform(BuildTarget.tvOS, true);
+        plugin.SetCompatibleWithPlatform(BuildTarget.Android, false);
+    }
+
+    private void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
+    {
+        var dir = new DirectoryInfo(sourceDir);
+        if (!dir.Exists)
+            throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
+        DirectoryInfo[] dirs = dir.GetDirectories();
+        Directory.CreateDirectory(destinationDir);
+        foreach (FileInfo file in dir.GetFiles())
+        {
+            string targetFilePath = Path.Combine(destinationDir, file.Name);
+            file.CopyTo(targetFilePath);
+        }
+        if (recursive)
+        {
+            foreach (DirectoryInfo subDir in dirs)
+            {
+                string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
+                CopyDirectory(subDir.FullName, newDestinationDir, true);
+            }
         }
     }
 }
