@@ -239,9 +239,6 @@ class AndroidBrightSDKDowloader: BrightSDKDowloader
             }
         }
 
-        // Log the contents of the extracted directory
-        // LogDirectoryContents(extractDir);
-
         // Find the .aar file recursively
         string aarFile = Directory.GetFiles(extractDir, "*.aar", SearchOption.AllDirectories).FirstOrDefault();
         string destAarFile = Path.Combine(sdkDir, "bright_sdk-" + sdkVersion + ".aar");
@@ -260,19 +257,6 @@ class AndroidBrightSDKDowloader: BrightSDKDowloader
         else
         {
             Debug.LogError($"AndroidBrightSDKDowloader: AAR file not found in {extractDir}");
-        }
-    }
-
-    private void LogDirectoryContents(string path)
-    {
-        Debug.Log($"AndroidBrightSDKDowloader: Contents of {path}:");
-        foreach (string dir in Directory.GetDirectories(path, "*", SearchOption.AllDirectories))
-        {
-            Debug.Log($"AndroidBrightSDKDowloader: Directory {dir}");
-        }
-        foreach (string file in Directory.GetFiles(path, "*", SearchOption.AllDirectories))
-        {
-            Debug.Log($"AndroidBrightSDKDowloader: File {file}");
         }
     }
 }
@@ -306,7 +290,6 @@ class AppleBrightSDKDowloader : BrightSDKDowloader
         if (sdkVersion == null)
             sdkVersion = publicVersion;
         DownloadBrightSdk();
-        // RemoveObsoleteAarFiles();
         ExtractBrightSdk();
     }
 
@@ -328,17 +311,6 @@ class AppleBrightSDKDowloader : BrightSDKDowloader
             }
         }
     }
-
-    // private void RemoveObsoleteAarFiles()
-    // {
-    //     Debug.Log("AppleBrightSDKDowloader: Removing obsolete files");
-    //     string[] obsoleteAarFiles = Directory.GetFiles(sdkDir, "bright_sdk*.aar", SearchOption.TopDirectoryOnly);
-    //     foreach (string file in obsoleteAarFiles)
-    //     {
-    //         Debug.Log($"AppleBrightSDKDowloader: Deleting obsolete AAR file {file}");
-    //         File.Delete(file);
-    //     }
-    // }
 
     private void ExtractBrightSdk()
     {
