@@ -344,18 +344,16 @@ class AppleBrightSDKDowloader : BrightSDKDowloader
     private void setSettingsOfFramework(string frameworkRoot)
     {
         Debug.Log("AppleBrightSDKDowloader: Set settings for framework");
-        string frameworkPath = Path.Combine(frameworkRoot, "brdsdk.xcframework");
+        string frameworkPath = Path.Combine(frameworkRoot, "brdsdk.framework");
         PluginImporter plugin = AssetImporter.GetAtPath(frameworkPath) as PluginImporter;
         if (plugin == null)
-        {
-            Debug.Log("AppleBrightSDKDowloader: Framework not found " + frameworkPath);
             return;
-        }
         plugin.SetCompatibleWithAnyPlatform(false);
         plugin.SetCompatibleWithEditor(false);
         plugin.SetCompatibleWithPlatform(BuildTarget.iOS, true);
-        plugin.SetCompatibleWithPlatform(BuildTarget.tvOS, true);
+        plugin.SetCompatibleWithPlatform(BuildTarget.tvOS, false);
         plugin.SetCompatibleWithPlatform(BuildTarget.Android, false);
+        plugin.SaveAndReimport();
     }
 
     private void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
@@ -371,12 +369,10 @@ class AppleBrightSDKDowloader : BrightSDKDowloader
             file.CopyTo(targetFilePath);
         }
         if (recursive)
-        {
             foreach (DirectoryInfo subDir in dirs)
             {
                 string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
                 CopyDirectory(subDir.FullName, newDestinationDir, true);
             }
-        }
     }
 }
