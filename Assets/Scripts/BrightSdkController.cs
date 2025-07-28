@@ -20,7 +20,7 @@ public class BrightSdkController : MonoBehaviour
     private TextMeshProUGUI platformText;
     private TextMeshProUGUI statusText;
 
-    private BrightSdkHelper brightSdkHelper;
+    private BrightSDKHelper brdsdkHelper;
 
     void Awake()
     {
@@ -32,7 +32,11 @@ public class BrightSdkController : MonoBehaviour
         AppDomain.CurrentDomain.UnhandledException += HandleUnhandledException;
         if (Application.platform == RuntimePlatform.Android)
         {
-            brightSdkHelper = GetComponent<BrightSdkHelper>();
+            brdsdkHelper = GetComponent<AndroidBrightSDKHelper>();
+        }
+        else if (Application.platform == RuntimePlatform.IPhonePlayer || Application.platform == RuntimePlatform.tvOS)
+        {
+            brdsdkHelper = GetComponent<AppleBrightSDKHelper>();
         }
     }
 
@@ -71,10 +75,8 @@ public class BrightSdkController : MonoBehaviour
 
     public void showBrightSdkConsent()
     {
-        if (brightSdkHelper != null)
-        {
-            brightSdkHelper.ShowConsent();
-        }
+        if (brdsdkHelper != null)
+            brdsdkHelper.ShowConsent();
     }
 
     private void HandleUnhandledException(object sender, UnhandledExceptionEventArgs e)
@@ -91,9 +93,9 @@ public class BrightSdkController : MonoBehaviour
 
     public void RequestAndUpdateStatus()
     {
-        if (brightSdkHelper != null)
+        if (brdsdkHelper != null)
         {
-            bool isEnabled = brightSdkHelper.IsEnabled();
+            bool isEnabled = brdsdkHelper.IsEnabled();
             UpdateStatus(isEnabled);
         }
     }
@@ -124,18 +126,12 @@ public class BrightSdkController : MonoBehaviour
             return;
         }
         Debug.Log($"Settings Toggle changed: {isOn}");
-        if (brightSdkHelper == null)
-        {
+        if (brdsdkHelper == null)
             return;
-        }
         if (isOn)
-        {
-            brightSdkHelper.ShowConsent();
-        }
+            brdsdkHelper.ShowConsent();
         else
-        {
-            brightSdkHelper.OptOut();
-        }
+            brdsdkHelper.OptOut();
     }
 
 }
