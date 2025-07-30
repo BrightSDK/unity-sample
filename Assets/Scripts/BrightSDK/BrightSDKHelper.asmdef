@@ -1,0 +1,19 @@
+{
+    "name": "BrightSDKHelper",
+    "rootNamespace": "",
+    "references": [
+        "AppleBrightSDK"
+    ],
+    "includePlatforms": [
+        "iOS",
+        "tvOS"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
