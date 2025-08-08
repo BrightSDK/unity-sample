@@ -13,11 +13,11 @@ interface BrightSDKExtractor
     public void Extract(string sourceFile);
 }
 
-class AndroidBrightSDKDowloader : BrightSDKExtractor
+class AndroidBrightSDKDownloader : BrightSDKExtractor
 {
     private string sdkDir;
 
-    public AndroidBrightSDKDowloader()
+    public AndroidBrightSDKDownloader()
     {
         sdkDir = BrightSDKDirectory.PluginsDir("Android");
     }
@@ -31,18 +31,18 @@ class AndroidBrightSDKDowloader : BrightSDKExtractor
     private void RemoveObsoleteFiles()
     {
         // Remove obsolete bright_sdk*.aar files
-        Debug.Log("AndroidBrightSDKDowloader: Removing obsolete bright_sdk*.aar files");
+        Debug.Log("AndroidBrightSDKDownloader: Removing obsolete bright_sdk*.aar files");
         string[] obsoleteAarFiles = Directory.GetFiles(sdkDir, "bright_sdk*.aar", SearchOption.TopDirectoryOnly);
         foreach (string file in obsoleteAarFiles)
         {
-            Debug.Log($"AndroidBrightSDKDowloader: Deleting obsolete AAR file {file}");
+            Debug.Log($"AndroidBrightSDKDownloader: Deleting obsolete AAR file {file}");
             File.Delete(file);
         }
     }
 
     private void ExtractBrightSdk(string sourceFile)
     {
-        Debug.Log("AndroidBrightSDKDowloader: Extracting Bright SDK");
+        Debug.Log("AndroidBrightSDKDownloader: Extracting Bright SDK");
         string extractDir = Path.Combine(BrightSDKDirectory.CacheDir, "extracted/Android");
         if (Directory.Exists(extractDir))
             Directory.Delete(extractDir, true);
@@ -61,10 +61,10 @@ class AndroidBrightSDKDowloader : BrightSDKExtractor
         {
             File.Copy(aarFile, destAarFile);
             AssetDatabase.Refresh();
-            Debug.Log($"AndroidBrightSDKDowloader: AAR file found and copied from {aarFile} to {destAarFile}");
+            Debug.Log($"AndroidBrightSDKDownloader: AAR file found and copied from {aarFile} to {destAarFile}");
         }
         else
-            Debug.LogError($"AndroidBrightSDKDowloader: AAR file not found in {extractDir}");
+            Debug.LogError($"AndroidBrightSDKDownloader: AAR file not found in {extractDir}");
     }
 
     private void unzip(string sourceFile, string extractDir)
@@ -101,11 +101,11 @@ class AndroidBrightSDKDowloader : BrightSDKExtractor
     }
 }
 
-class AppleBrightSDKDowloader : BrightSDKExtractor
+class AppleBrightSDKDownloader : BrightSDKExtractor
 {
     private string sdkDir;
 
-    public AppleBrightSDKDowloader()
+    public AppleBrightSDKDownloader()
     {
         sdkDir = BrightSDKDirectory.PluginsDir("Apple");
     }
@@ -118,22 +118,22 @@ class AppleBrightSDKDowloader : BrightSDKExtractor
 
     private void RemoveObsoleteFiles()
     {
-        Debug.Log("AppleBrightSDKDowloader: Removing obsolete SDK's files");
+        Debug.Log("AppleBrightSDKDownloader: Removing obsolete SDK's files");
         foreach (string file in Directory.GetFiles(sdkDir, "*.*"))
         {
-            Debug.Log($"AppleBrightSDKDowloader: Deleting file {file}");
+            Debug.Log($"AppleBrightSDKDownloader: Deleting file {file}");
             File.Delete(file);
         }
         foreach (string dir in Directory.GetDirectories(sdkDir))
         {
-            Debug.Log($"AppleBrightSDKDowloader: Deleting folder {dir}");
+            Debug.Log($"AppleBrightSDKDownloader: Deleting folder {dir}");
             Directory.Delete(dir, true);
         }
     }
 
     private void ExtractBrightSdk(string sourceFile)
     {
-        Debug.Log("AppleBrightSDKDowloader: Extracting Bright SDK");
+        Debug.Log("AppleBrightSDKDownloader: Extracting Bright SDK");
         string extractDir = Path.Combine(BrightSDKDirectory.CacheDir, "extracted/Apple");
         if (Directory.Exists(extractDir))
             Directory.Delete(extractDir, true);
@@ -149,12 +149,12 @@ class AppleBrightSDKDowloader : BrightSDKExtractor
         BrightSDKDirectory.CopyDirectory(srcDir, destDir, true);
         setSettingsOfFramework(destDir);
         AssetDatabase.Refresh();
-        Debug.Log("AppleBrightSDKDowloader: Bright SDK files copied");
+        Debug.Log("AppleBrightSDKDownloader: Bright SDK files copied");
     }
 
     private void setSettingsOfFramework(string frameworkRoot)
     {
-        Debug.Log("AppleBrightSDKDowloader: Set settings for framework");
+        Debug.Log("AppleBrightSDKDownloader: Set settings for framework");
         string frameworkPath = Path.Combine(frameworkRoot, "brdsdk.framework");
         PluginImporter plugin = AssetImporter.GetAtPath(frameworkPath) as PluginImporter;
         if (plugin == null)

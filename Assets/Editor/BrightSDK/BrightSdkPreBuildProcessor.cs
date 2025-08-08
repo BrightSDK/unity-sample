@@ -17,8 +17,8 @@ public class BrightSdkPreBuildProcessor : IPreprocessBuildWithReport
     {
         sdkVersions = new BrightSDKVersions();
 
-        extractors[BuildTarget.Android] = new AndroidBrightSDKDowloader();
-        extractors[BuildTarget.iOS] = extractors[BuildTarget.tvOS] = new AppleBrightSDKDowloader();
+        extractors[BuildTarget.Android] = new AndroidBrightSDKDownloader();
+        extractors[BuildTarget.iOS] = extractors[BuildTarget.tvOS] = new AppleBrightSDKDownloader();
 
         archiveDownloaders[BuildTarget.Android] = new AndroidSDKArchiveDownloader();
         archiveDownloaders[BuildTarget.iOS] = archiveDownloaders[BuildTarget.tvOS] = new AppleSDKArchiveDownloader();
