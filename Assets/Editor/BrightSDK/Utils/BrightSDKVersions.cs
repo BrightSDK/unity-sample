@@ -5,23 +5,24 @@ using UnityEngine;
 using UnityEditor;
 
 [Serializable]
-class SdkVersions
+class SDKVersions
 {
     public string android;
     public string ios;
+    public string macos;
     // Add other fields if necessary
 }
 
 class BrightSDKVersions
 {
     private readonly string sdkVersionsUrl = "https://bright-sdk.com/sdk_api/sdk/versions";
-    private SdkVersions lastVersions;
+    private SDKVersions lastVersions;
 
     public void load()
     {
         Debug.Log("Fetching Bright SDK versions");
         string jsonContent = getVersionsContent();
-        lastVersions = JsonUtility.FromJson<SdkVersions>(jsonContent);
+        lastVersions = JsonUtility.FromJson<SDKVersions>(jsonContent);
         Debug.Log("Loaded SDK versions: " + lastVersions);
     }
 
@@ -29,6 +30,8 @@ class BrightSDKVersions
     {
         if (platform == BuildTarget.iOS || platform == BuildTarget.tvOS)
             return lastVersions?.ios;
+        else if (platform == BuildTarget.StandaloneOSX)
+            return lastVersions?.macos;
         else if (platform == BuildTarget.Android)
             return lastVersions?.android;
 

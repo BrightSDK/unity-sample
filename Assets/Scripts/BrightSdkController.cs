@@ -34,7 +34,7 @@ public class BrightSdkController : MonoBehaviour
         {
             brdsdkHelper = GetComponent<AndroidBrightSDKHelper>();
         }
-        else if (Application.platform == RuntimePlatform.IPhonePlayer || Application.platform == RuntimePlatform.tvOS)
+        else if (Application.platform == RuntimePlatform.IPhonePlayer || Application.platform == RuntimePlatform.tvOS || Application.platform == RuntimePlatform.OSXPlayer)
         {
             brdsdkHelper = GetComponent<AppleBrightSDKHelper>();
         }
