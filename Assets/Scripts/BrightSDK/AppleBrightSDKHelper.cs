@@ -35,9 +35,8 @@ public class AppleBrightSDKHelper : BrightSDKHelper
 
     private void choiceChanged(Choice choice)
     {
-        bool enabled = choice == Brdsdk.Choice.Peer;
-        if (onStatusChangeCallback != null)
-            onStatusChangeCallback.Invoke(enabled);
+        bool isEnabled = choice == Brdsdk.Choice.Peer;
+        NotifyChoiceChangeListeners(isEnabled);
     }
 
 #elif APPLE_BRIGHT_SDK && UNITY_STANDALONE_OSX

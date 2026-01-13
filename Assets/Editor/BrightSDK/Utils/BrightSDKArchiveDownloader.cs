@@ -20,7 +20,6 @@ class BrightSDKArchiveDownloader
             return null;
         }
         string downloadURL = sdkUrl + remoteName;
-        Debug.Log($"==>> download URL: {downloadURL}");
         string targetFile = Path.Combine(BrightSDKDirectory.CacheDir, remoteName);
         downloadFile(downloadURL, targetFile);
         return targetFile;
@@ -96,5 +95,15 @@ class AppleDesktopSDKArchiveDownloader : BrightSDKArchiveDownloader
     {
         string version = configVersion ?? lastVersion;
         return "bright_sdk_macos_unity-" + version + ".zip";
+    }
+}
+
+class WindowsSDKArchiveDownloader : BrightSDKArchiveDownloader
+{
+    public override string VersionsPlatformKey => "windows";
+    public override string MakeRemoteFileName(string configVersion, string lastVersion)
+    {
+        string version = configVersion ?? lastVersion;
+        return "bright_sdk_win-" + version + ".zip";
     }
 }

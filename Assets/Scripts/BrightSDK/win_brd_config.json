@@ -1,0 +1,12 @@
+{
+  "app_id": "win_myapp.example.com",
+  "app_name": "MyApp -Example",
+  "logo_link": "https://png.cleanpng.com/downloadpng/bf699a67b59d61d5769d9581af0522b0/L3PzQnFDkwYwgKV3R6Q8ZkPlR7brUMUxbZI6UNZsOEPoSIi8gcQ5O2Fmfdc7LoDxd1==.png"
+    /*"bg_color": "#ffffffff",*/
+  /*"btn_color": "#ff323232",*/
+  /*"txt_color": "#ff000000",*/
+  /*"app_name_color": "#ff000000",*/
+  /*"benefit": "To get some feature",*/
+  /*"agree_btn": "I_AGREE",*/
+  /*"disagree_btn": "NO_THANK_YOU"*/
+}

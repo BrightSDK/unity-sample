@@ -2,6 +2,7 @@
     "versions": {
         "android": null,
         "appleMobile": null,
-        "appleDesktop": null
+        "appleDesktop": null,
+        "windows": null
     }
 }

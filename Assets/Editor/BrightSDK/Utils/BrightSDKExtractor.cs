@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 using System.Linq;
 using System.Diagnostics;
@@ -13,6 +14,8 @@ interface BrightSDKExtractor
 {
     public void Extract(string sourceFile);
 }
+
+// --- Android ---
 
 class AndroidBrightSDKExtractor : BrightSDKExtractor
 {
@@ -111,7 +114,7 @@ class AppleBrightSDKExtractor : BrightSDKExtractor
 
     public AppleBrightSDKExtractor(string _relativeSdkPath)
     {
-        relativeSdkPath = _relativeSdkPath;//"Apple/BrightDataSDK";
+        relativeSdkPath = _relativeSdkPath;
         sdkDir = BrightSDKDirectory.PluginsDir(relativeSdkPath);
     }
 
@@ -203,7 +206,7 @@ class AppleBrightSDKExtractor : BrightSDKExtractor
 
 class AppleMobileBrightSDKExtractor: AppleBrightSDKExtractor
 {
-    public AppleMobileBrightSDKExtractor() : base("Apple/BrightDataSDK")
+    public AppleMobileBrightSDKExtractor() : base("Apple/BrightSDK")
     {
     }
 
@@ -249,7 +252,7 @@ class AppleMobileBrightSDKExtractor: AppleBrightSDKExtractor
 
 class AppleDesktopBrightSDKExtractor: AppleBrightSDKExtractor
 {
-    public AppleDesktopBrightSDKExtractor() : base("Apple/BrightDataSDK-macOS")
+    public AppleDesktopBrightSDKExtractor() : base("Apple/BrightSDK-macOS")
     {
     }
 
@@ -279,5 +282,120 @@ class AppleDesktopBrightSDKExtractor: AppleBrightSDKExtractor
         plugin.SetCompatibleWithPlatform(BuildTarget.Android, false);
         plugin.SetCompatibleWithPlatform(BuildTarget.StandaloneOSX, true);
         plugin.SaveAndReimport();
+    }
+}
+// --- Windows ---
+
+class WindowsBrightSDKExtractor : BrightSDKExtractor
+{
+    private string sdkDir;
+
+    public WindowsBrightSDKExtractor()
+    {
+        sdkDir = BrightSDKDirectory.PluginsDir("Windows/BrightSDK");
+    }
+
+    public void Extract(string sourceFile)
+    {
+        RemoveObsoleteFiles();
+        ExtractBrightSdk(sourceFile);
+    }
+
+    public virtual string ConstructSourcePath(string extractDir)
+    {
+        return extractDir;
+    }
+
+    public virtual void DidUnzipToTempDir(string srcDir)
+    {
+    }
+
+    public virtual void DidCopyFilesToDestination(string destDir)
+    {
+        setSettingsOfFramework(destDir);
+    }
+
+    private void RemoveObsoleteFiles()
+    {
+        Debug.Log("WindowsBrightSDKExtractor: Removing obsolete SDK's files");
+        foreach (string file in Directory.GetFiles(sdkDir, "*.*"))
+        {
+            Debug.Log($"WindowsBrightSDKExtractor: Deleting file {file}");
+            File.Delete(file);
+        }
+        foreach (string dir in Directory.GetDirectories(sdkDir))
+        {
+            Debug.Log($"WindowsBrightSDKExtractor: Deleting folder {dir}");
+            Directory.Delete(dir, true);
+        }
+    }
+
+    private void ExtractBrightSdk(string sourceFile)
+    {
+        Debug.Log($"WindowsBrightSDKExtractor: Extracting Bright SDK from {sourceFile}");
+        string extractDir = Path.Combine(BrightSDKDirectory.CacheDir, "extracted/Windows");
+        if (Directory.Exists(extractDir))
+            Directory.Delete(extractDir, true);
+        Directory.CreateDirectory(extractDir);
+
+        unzip(sourceFile, extractDir);
+
+        string destDir = sdkDir;
+        if (Directory.Exists(destDir))
+        {
+            Directory.Delete(destDir, true);
+            Directory.CreateDirectory(destDir);
+        }
+
+        string srcDir = ConstructSourcePath(extractDir);
+        DidUnzipToTempDir(srcDir);
+
+        File.Copy(Path.Combine(srcDir, "lum_sdk32.dll"), Path.Combine(destDir, "lum_sdk32.dll"));
+        File.Copy(Path.Combine(srcDir, "lum_sdk64.dll"), Path.Combine(destDir, "lum_sdk64.dll"));
+        File.Copy(Path.Combine(srcDir, "net_updater32.exe"), Path.Combine(destDir, "net_updater32.exe"));
+        File.Copy(Path.Combine(srcDir, "net_updater64.exe"), Path.Combine(destDir, "net_updater64.exe"));
+        File.Copy(Path.Combine(srcDir, "brd_config.json"), Path.Combine(destDir, "brd_config.json"));
+        AssetDatabase.Refresh();
+        DidCopyFilesToDestination(destDir);
+        AssetDatabase.Refresh();
+
+        Debug.Log("WindowsBrightSDKExtractor: Bright SDK files copied");
+    }
+
+    private void unzip(string sourceFile, string extractDir)
+    {
+        ZipFile.ExtractToDirectory(sourceFile, extractDir);
+    }
+
+    private void setSettingsOfFramework(string sdkRoot)
+    {
+        Debug.Log("WindowsBrightSDKExtractor: Set settings for sdk files");
+
+        var suffixes = new[] {"32", "64"};
+        foreach (string suffix in suffixes)
+        {
+            var files = new[] {$"lum_sdk{suffix}.dll", $"net_updater{suffix}.exe"};
+            foreach (string file in files)
+            {
+                string fullFile = Path.Combine(sdkRoot, file);
+                PluginImporter plugin = AssetImporter.GetAtPath(fullFile) as PluginImporter;
+                if (plugin == null)
+                {
+                    Debug.Log($"WindowsBrightSDKExtractor: File {fullFile} as plugin does not exist");
+                    continue;
+                }
+                plugin.SetCompatibleWithAnyPlatform(false);
+                plugin.SetCompatibleWithEditor(false);
+                plugin.SetCompatibleWithPlatform(BuildTarget.iOS, false);
+                plugin.SetCompatibleWithPlatform(BuildTarget.tvOS, false);
+                plugin.SetCompatibleWithPlatform(BuildTarget.Android, false);
+                plugin.SetCompatibleWithPlatform(BuildTarget.StandaloneOSX, false);
+                if (suffix == "32")
+                    plugin.SetCompatibleWithPlatform(BuildTarget.StandaloneWindows, true);
+                else if (suffix == "64")
+                    plugin.SetCompatibleWithPlatform(BuildTarget.StandaloneWindows64, true);
+                plugin.SaveAndReimport();
+            }
+        }
     }
 }

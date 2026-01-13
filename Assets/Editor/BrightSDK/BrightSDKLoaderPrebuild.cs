@@ -20,10 +20,12 @@ public class BrightSDKLoaderPrebuild : IPreprocessBuildWithReport
         extractors[BuildTarget.Android] = new AndroidBrightSDKExtractor();
         extractors[BuildTarget.iOS] = extractors[BuildTarget.tvOS] = new AppleMobileBrightSDKExtractor();
         extractors[BuildTarget.StandaloneOSX] = new AppleDesktopBrightSDKExtractor();
+        extractors[BuildTarget.StandaloneWindows] = extractors[BuildTarget.StandaloneWindows64] = new WindowsBrightSDKExtractor();
 
         archiveDownloaders[BuildTarget.Android] = new AndroidSDKArchiveDownloader();
         archiveDownloaders[BuildTarget.iOS] = archiveDownloaders[BuildTarget.tvOS] = new AppleMobileSDKArchiveDownloader();
         archiveDownloaders[BuildTarget.StandaloneOSX] = new AppleDesktopSDKArchiveDownloader();
+        archiveDownloaders[BuildTarget.StandaloneWindows] = archiveDownloaders[BuildTarget.StandaloneWindows64] = new WindowsSDKArchiveDownloader();
     }
 
     public void OnPreprocessBuild(BuildReport report)
@@ -48,12 +50,13 @@ public class BrightSDKLoaderPrebuild : IPreprocessBuildWithReport
 
     private void UpdateBrightSdk(BuildTarget platform)
     {
-        Debug.Log("BrightSDKLoaderPrebuild: Starting Bright SDK update");
+        Debug.Log($"BrightSDKLoaderPrebuild: Starting Bright SDK update for platform {platform}");
         sdkVersions.load();
 
         if (isPlatformSupported(platform) && sdkVersions.LastVersion(platform) != null)
         {
             string lastVersion = sdkVersions.LastVersion(platform);
+            Debug.Log($"BrightSDKLoaderPrebuild: {platform} last version {lastVersion}");
             string archiveFile = archiveDownloaders[platform].Download(lastVersion);
             extractors[platform].Extract(archiveFile);
         }

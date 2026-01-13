@@ -10,6 +10,7 @@ class SDKVersions
     public string android;
     public string ios;
     public string macos;
+    public string win;
     // Add other fields if necessary
 }
 
@@ -20,10 +21,10 @@ class BrightSDKVersions
 
     public void load()
     {
-        Debug.Log("Fetching Bright SDK versions");
+        Debug.Log("BrightSDKVersions: Fetching Bright SDK versions");
         string jsonContent = getVersionsContent();
         lastVersions = JsonUtility.FromJson<SDKVersions>(jsonContent);
-        Debug.Log("Loaded SDK versions: " + lastVersions);
+        Debug.Log($"BrightSDKVersions: Loaded SDK versions: {lastVersions}");
     }
 
     public string LastVersion(BuildTarget platform)
@@ -34,6 +35,8 @@ class BrightSDKVersions
             return lastVersions?.macos;
         else if (platform == BuildTarget.Android)
             return lastVersions?.android;
+        else if (platform == BuildTarget.StandaloneWindows || platform == BuildTarget.StandaloneWindows64)
+            return lastVersions?.win;
 
         return null;
     }
