@@ -20,6 +20,14 @@ public class BrightSDKHelper : MonoBehaviour
     {
     }
 
+    public virtual void ExternalOptIn()
+    {
+    }
+
+    public virtual void NotifyConsentShown()
+    {
+    }
+
     public virtual void OptOut()
     {
     }

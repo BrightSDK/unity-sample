@@ -24,6 +24,16 @@ public class AndroidBrightSDKHelper : BrightSDKHelper
         brightApi.CallStatic("init", currentActivity, settings);
     }
 
+    public override void ExternalOptIn()
+    {
+        brightApi.CallStatic("externalOptIn", currentActivity);
+    }
+
+    public override void NotifyConsentShown()
+    {
+        brightApi.CallStatic("reportConsentShown", currentActivity);
+    }
+
     public override void ShowConsent()
     {
         brightApi.CallStatic("showConsent", currentActivity);
