@@ -16,7 +16,7 @@ This project showcases how to integrate and use the Bright SDK in a Unity applic
 
 ## Prerequisites
 
-- Unity 2021.3 or later (recommended)
+- Unity 2022.3 or later (recommended)
 - For Android builds: Android SDK and NDK
 - For iOS/macOS builds: Xcode
 - For Windows builds: Visual Studio
