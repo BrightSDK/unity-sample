@@ -140,7 +140,7 @@ For detailed API documentation, visit the [Bright SDK Documentation](https://bri
 ## Support
 
 - **Issues**: Report bugs or request features on [GitHub Issues](https://github.com/BrightSDK/unity-sample/issues)
-- **Documentation**: [Bright SDK Docs](https://brightsdk.github.io/)
+<!-- - **Documentation**: [Bright SDK Docs](https://brightsdk.github.io/) -->
 - **Contact**: support@brightsdk.com
 
 ## License
