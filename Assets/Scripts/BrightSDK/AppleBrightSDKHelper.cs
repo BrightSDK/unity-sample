@@ -18,6 +18,16 @@ public class AppleBrightSDKHelper : BrightSDKHelper
         BrdsdkBridge.tryInit(benefit, agreeBtn, disagreeBtn, null, null, skipConsent);
     }
 
+    public override void ExternalOptIn()
+    {
+        BrdsdkBridge.external_opt_in(ChoiceTriggerType.Manual);
+    }
+
+    public override void NotifyConsentShown()
+    {
+        BrdsdkBridge.notify_consent_shown();
+    }
+
     public override void ShowConsent()
     {
         BrdsdkBridge.show_consent();
@@ -35,9 +45,8 @@ public class AppleBrightSDKHelper : BrightSDKHelper
 
     private void choiceChanged(Choice choice)
     {
-        bool enabled = choice == Brdsdk.Choice.Peer;
-        if (onStatusChangeCallback != null)
-            onStatusChangeCallback.Invoke(enabled);
+        bool isEnabled = choice == Brdsdk.Choice.Peer;
+        NotifyChoiceChangeListeners(isEnabled);
     }
 
 #elif APPLE_BRIGHT_SDK && UNITY_STANDALONE_OSX
@@ -49,6 +58,20 @@ public class AppleBrightSDKHelper : BrightSDKHelper
         if (sdkBridge == null)
             return;
         sdkBridge.SetChoiceChangeCallback(choiceChanged);
+    }
+
+    public override void ExternalOptIn()
+    {
+        if (sdkBridge == null)
+            return;
+        sdkBridge.ExternalOptIn();
+    }
+
+    public override void NotifyConsentShown()
+    {
+        if (sdkBridge == null)
+            return;
+        sdkBridge.NotifyConsentShown();
     }
 
     public override void ShowConsent()
@@ -75,8 +98,7 @@ public class AppleBrightSDKHelper : BrightSDKHelper
     private void choiceChanged(BrdsdkBridgeMacOS.Choice choice)
     {
         bool enabled = choice == BrdsdkBridgeMacOS.Choice.Peer;
-        if (onStatusChangeCallback != null)
-            onStatusChangeCallback.Invoke(enabled);
+        NotifyChoiceChangeListeners(enabled);
     }
 
     private void emptyChoiceChanged(BrdsdkBridgeMacOS.Choice choice)

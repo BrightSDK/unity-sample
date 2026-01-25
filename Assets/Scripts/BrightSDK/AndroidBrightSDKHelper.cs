@@ -4,6 +4,7 @@ using UnityEngine.Events;
 
 public class AndroidBrightSDKHelper : BrightSDKHelper
 {
+#if UNITY_ANDROID
     private ChoiceListener choiceListener;
     private AndroidJavaObject brightApi;
     private AndroidJavaObject currentActivity;
@@ -21,6 +22,16 @@ public class AndroidBrightSDKHelper : BrightSDKHelper
         settings.Call("setSkipConsent", skipConsent);
         settings.Call("setOnStatusChange", choiceListener);
         brightApi.CallStatic("init", currentActivity, settings);
+    }
+
+    public override void ExternalOptIn()
+    {
+        brightApi.CallStatic("externalOptIn", currentActivity);
+    }
+
+    public override void NotifyConsentShown()
+    {
+        brightApi.CallStatic("reportConsentShown", currentActivity);
     }
 
     public override void ShowConsent()
@@ -41,8 +52,7 @@ public class AndroidBrightSDKHelper : BrightSDKHelper
 
     private void OnStatusChange(bool isEnabled)
     {
-        if (onStatusChangeCallback != null)
-            onStatusChangeCallback.Invoke(isEnabled);
+        NotifyChoiceChangeListeners(isEnabled);
     }
 
     private class ChoiceListener : AndroidJavaProxy
@@ -66,6 +76,5 @@ public class AndroidBrightSDKHelper : BrightSDKHelper
             return choice == 1;
         }
     }
-
+#endif
 }
-

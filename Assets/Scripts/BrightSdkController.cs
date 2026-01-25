@@ -38,6 +38,14 @@ public class BrightSdkController : MonoBehaviour
         {
             brdsdkHelper = GetComponent<AppleBrightSDKHelper>();
         }
+        else if (Application.platform == RuntimePlatform.WindowsPlayer)
+        {
+            brdsdkHelper = GetComponent<WinBrightSDKHelper>();
+        }
+        else
+        {
+            brdsdkHelper = new BrightSDKHelper();
+        }
     }
 
     // Start is called before the first frame update
