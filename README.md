@@ -20,6 +20,7 @@ This project showcases how to integrate and use the Bright SDK in a Unity applic
 - For Android builds: Android SDK and NDK
 - For iOS/macOS builds: Xcode
 - For Windows builds: Visual Studio
+- A BrightSDK API key exported as `SDK_API_KEY` — see [docs/obtain-api-key.md](docs/obtain-api-key.md)
 
 ## Installation
 
@@ -29,12 +30,18 @@ This project showcases how to integrate and use the Bright SDK in a Unity applic
    cd unity-sample
    ```
 
-2. Install the Bright SDK:
+2. Export your API key:
+   ```bash
+   export SDK_API_KEY=<your-api-key>
+   ```
+   See [docs/obtain-api-key.md](docs/obtain-api-key.md) for how to get one.
+
+3. Install the Bright SDK:
    ```bash
    ./install_bright_sdk.sh
    ```
 
-3. Open the project in Unity:
+4. Open the project in Unity:
    - Launch Unity Hub
    - Click "Add" and select the cloned project directory
    - Open the project
