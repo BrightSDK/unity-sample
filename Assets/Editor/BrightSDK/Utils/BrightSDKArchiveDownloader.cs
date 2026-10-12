@@ -23,8 +23,9 @@ class BrightSDKArchiveDownloader
     {
         string apiKey = System.Environment.GetEnvironmentVariable("SDK_API_KEY");
         string resolvedUrl = null;
+        string expectedSha256 = null;
         if (!string.IsNullOrEmpty(apiKey) && IntegrationPlatformKey != null)
-            resolvedUrl = resolveUrlFromConfig(apiKey, IntegrationPlatformKey, lastVersion);
+            resolvedUrl = resolveUrlFromConfig(apiKey, IntegrationPlatformKey, lastVersion, out expectedSha256);
 
         string configVersion = getConfigVersion();
         string remoteName = MakeRemoteFileName(configVersion, lastVersion);
@@ -36,7 +37,7 @@ class BrightSDKArchiveDownloader
         string downloadURL = resolvedUrl ?? (sdkUrl + remoteName);
         string targetFile = Path.Combine(BrightSDKDirectory.CacheDir,
             remoteName ?? Path.GetFileName(downloadURL));
-        downloadFile(downloadURL, targetFile);
+        downloadFile(downloadURL, targetFile, expectedSha256);
         return targetFile;
     }
 
@@ -45,8 +46,9 @@ class BrightSDKArchiveDownloader
         return null;
     }
 
-    private string resolveUrlFromConfig(string apiKey, string platformKey, string fallbackVersion)
+    private string resolveUrlFromConfig(string apiKey, string platformKey, string fallbackVersion, out string sha256)
     {
+        sha256 = null;
         try
         {
             HttpWebRequest req = (HttpWebRequest) WebRequest.Create(IntegrationConfigUrl);
@@ -59,6 +61,7 @@ class BrightSDKArchiveDownloader
                 // Minimal JSON extraction without a full JSON parser
                 string ver = extractJsonString(json, "\"" + platformKey + "\".*?\"last_version\":\\s*\"([^\"]+)\"");
                 string urlTpl = extractJsonString(json, "\"" + platformKey + "\".*?\"url_tpl\":\\s*\"([^\"]+)\"");
+                sha256 = extractJsonString(json, "\"" + platformKey + "\".*?\"sha256\":\\s*\"([^\"]+)\"");
                 string baseTpl = extractJsonString(json, "\"base\":\\s*\"([^\"]+)\"");
                 string commonTpl = extractJsonString(json, "\"common\":\\s*\"([^\"]+)\"");
                 string tvTpl = extractJsonString(json, "\"tv\":\\s*\"([^\"]+)\"");
@@ -90,17 +93,44 @@ class BrightSDKArchiveDownloader
         return match.Success ? match.Groups[1].Value : null;
     }
 
-    private void downloadFile(string url, string targetFile)
+    private void downloadFile(string url, string targetFile, string expectedSha256 = null)
     {
-        if (!File.Exists(targetFile))
+        if (File.Exists(targetFile))
         {
-            Debug.Log($"SDKArchiveDownloader: {targetFile} not exists, downloading");
-            using (WebClient client = new WebClient())
+            if (string.IsNullOrEmpty(expectedSha256) || verifyChecksum(targetFile, expectedSha256))
             {
-                client.DownloadFile(url, targetFile);
+                Debug.Log($"SDKArchiveDownloader: Reusing downloaded file {targetFile}");
+                return;
             }
-        } else {
-            Debug.Log($"SDKArchiveDownloader: Reusing downloaded file {targetFile}");
+            Debug.LogWarning($"SDKArchiveDownloader: Cached file {targetFile} failed checksum, redownloading");
+            try { File.Delete(targetFile); } catch {}
+        }
+
+        Debug.Log($"SDKArchiveDownloader: {targetFile} not exists or invalidated, downloading");
+        using (WebClient client = new WebClient())
+        {
+            client.DownloadFile(url, targetFile);
+        }
+
+        if (!string.IsNullOrEmpty(expectedSha256) && !verifyChecksum(targetFile, expectedSha256))
+        {
+            try { File.Delete(targetFile); } catch {}
+            throw new System.Security.Cryptography.CryptographicException(
+                $"Checksum mismatch for downloaded SDK archive: {targetFile}");
+        }
+    }
+
+    private static bool verifyChecksum(string file, string expectedSha256)
+    {
+        if (string.IsNullOrEmpty(expectedSha256) || !File.Exists(file))
+            return false;
+
+        using (var sha = System.Security.Cryptography.SHA256.Create())
+        using (var stream = File.OpenRead(file))
+        {
+            byte[] hash = sha.ComputeHash(stream);
+            string actual = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            return string.Equals(actual, expectedSha256.ToLowerInvariant(), StringComparison.Ordinal);
         }
     }
 
