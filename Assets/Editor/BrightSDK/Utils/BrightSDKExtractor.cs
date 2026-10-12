@@ -73,6 +73,10 @@ class AndroidBrightSDKExtractor : BrightSDKExtractor
 
     private void unzip(string sourceFile, string extractDir)
     {
+        string root = Path.GetFullPath(extractDir);
+        if (!root.EndsWith(Path.DirectorySeparatorChar.ToString()))
+            root += Path.DirectorySeparatorChar;
+
         using (FileStream fs = new FileStream(sourceFile, FileMode.Open, FileAccess.Read))
         using (GZipInputStream gzipStream = new GZipInputStream(fs))
         using (TarInputStream tarStream = new TarInputStream(gzipStream, Encoding.UTF8))
@@ -81,7 +85,12 @@ class AndroidBrightSDKExtractor : BrightSDKExtractor
             while ((entry = tarStream.GetNextEntry()) != null)
             {
                 string name = entry.Name;
-                string outputPath = Path.Combine(extractDir, name);
+                if (string.IsNullOrEmpty(name))
+                    continue;
+
+                string outputPath = Path.GetFullPath(Path.Combine(root, name));
+                if (!outputPath.StartsWith(root, StringComparison.Ordinal))
+                    throw new IOException($"tar entry escapes destination: {name}");
 
                 if (entry.IsDirectory)
                 {
@@ -89,6 +98,13 @@ class AndroidBrightSDKExtractor : BrightSDKExtractor
                 }
                 else
                 {
+                    if (entry.TarHeader != null &&
+                        entry.TarHeader.TypeFlag != TarHeader.LF_NORMAL &&
+                        entry.TarHeader.TypeFlag != TarHeader.LF_OLDNORM)
+                    {
+                        continue;
+                    }
+
                     string directoryPath = Path.GetDirectoryName(outputPath);
                     if (!Directory.Exists(directoryPath))
                     {
